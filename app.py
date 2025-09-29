@@ -1,5 +1,11 @@
 import os
 import streamlit as st
+# Force CPU + disable SDPA (fixes meta tensor errors)
+os.environ["DISABLE_TRANSFORMERS_SDPA"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = ""  # ensures Hugging Face loads on CPU
+from transformers import pipeline
+import pandas as pd
+
 from transformers import pipeline
 import pandas as pd
 
