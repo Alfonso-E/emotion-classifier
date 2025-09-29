@@ -1,34 +1,25 @@
 import os
 import streamlit as st
-# Force CPU + disable SDPA (fixes meta tensor errors)
-os.environ["DISABLE_TRANSFORMERS_SDPA"] = "1"
-os.environ["CUDA_VISIBLE_DEVICES"] = ""  # ensures Hugging Face loads on CPU
 from transformers import pipeline
 import pandas as pd
 
-from transformers import pipeline
-import pandas as pd
 
-# Path to your local model
-model_path = os.path.join(os.path.dirname(__file__), "emotion_model")
-
-# Load pipeline
+# Load pipeline (force CPU with device=-1 to avoid meta tensor bug)
 classifier = pipeline(
     "text-classification",
-    model="Alfonso-E/emotion-classifier-model",  # your actual HF repo
+    model="Alfonso-E/emotion-classifier-model",  # your Hugging Face repo
+    device=-1,                                   # <- force CPU
     return_all_scores=True
 )
 
-
-# Define label names (order must match training labels)
+# Define label names (order must match your training labels)
 labels = ["sadness", "joy", "love", "anger", "fear", "surprise"]
 
 # Streamlit UI
 st.title('Emotion Classifier')
 st.write('Enter text and I will predict the emotion:')
 
-
-user_input = st.text_area('Your text here: ')
+user_input = st.text_area('Your text here:')
 if st.button('Predict'):
     result = classifier(user_input, return_all_scores=True)
 
