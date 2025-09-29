@@ -2,50 +2,53 @@ import os
 import streamlit as st
 import pandas as pd
 import torch
-from transformers import pipeline, AutoModelForSequenceClassification, AutoTokenizer
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
 
-# Force GPU if available, otherwise fallback to CPU
-device = 0 if torch.cuda.is_available() else -1
+# --- Force CPU + disable SDPA ---
+os.environ["DISABLE_TRANSFORMERS_SDPA"] = "1"
 
+# Define labels (must match training labels order)
+labels = ["sadness", "joy", "love", "anger", "fear", "surprise"]
+
+# Cache model to avoid reloading each run
 @st.cache_resource
 def load_model():
     tokenizer = AutoTokenizer.from_pretrained("Alfonso-E/emotion-classifier-model")
     model = AutoModelForSequenceClassification.from_pretrained(
         "Alfonso-E/emotion-classifier-model",
-        torch_dtype=torch.float32  # make sure weights load eagerly, not as meta
-    )
+        torch_dtype=torch.float32,
+        low_cpu_mem_usage=False
+    ).to("cpu")  # ✅ force CPU
+
     return pipeline(
         "text-classification",
         model=model,
         tokenizer=tokenizer,
         return_all_scores=True,
-        device=device
+        device=-1  # ✅ -1 = CPU
     )
 
 classifier = load_model()
 
-# Define label names (order must match your training labels)
-labels = ["sadness", "joy", "love", "anger", "fear", "surprise"]
+# --- Streamlit UI ---
+st.title("Emotion Classifier")
+st.write("Enter text and I will predict the emotion:")
 
-# Streamlit UI
-st.title('Emotion Classifier')
-st.write('Enter text and I will predict the emotion:')
-
-user_input = st.text_area('Your text here: ')
-if st.button('Predict') and user_input.strip():
+user_input = st.text_area("Your text here:")
+if st.button("Predict"):
     result = classifier(user_input, return_all_scores=True)
 
     st.write(f"**Text:** {user_input}")
 
-    # Convert results into lists for plotting
-    scores = [r['score'] for r in result[0]]
+    # Convert results to lists
+    scores = [r["score"] for r in result[0]]
 
-    # Display emotion probabilities
+    # Show probabilities
     st.subheader("Emotion Probabilities:")
     for label, score in zip(labels, scores):
         st.write(f"- {label}: {score:.4f}")
 
-    # Bar chart visualization
+    # Bar chart
     df = pd.DataFrame({"Emotion": labels, "Probability": scores})
     st.bar_chart(df.set_index("Emotion"))
 
