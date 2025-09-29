@@ -9,10 +9,10 @@ model_path = os.path.join(os.path.dirname(__file__), "emotion_model")
 # Load pipeline
 classifier = pipeline(
     "text-classification",
-    model=model_path,
-    tokenizer=model_path,
-    return_all_scores=True  # important for probabilities
+    model="Alfonso-E/emotion-classifier-model",  # your actual HF repo
+    return_all_scores=True
 )
+
 
 # Define label names (order must match training labels)
 labels = ["sadness", "joy", "love", "anger", "fear", "surprise"]
